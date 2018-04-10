@@ -9,7 +9,6 @@ import android.text.TextUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mozilla.telemetry.Telemetry;
-import org.mozilla.telemetry.TelemetryHolder;
 import org.mozilla.telemetry.TestUtils;
 import org.mozilla.telemetry.config.TelemetryConfiguration;
 import org.mozilla.telemetry.measurement.EventsMeasurement;
@@ -55,19 +54,17 @@ public class TelemetryEventTest {
         final TelemetryClient client = mock(TelemetryClient.class);
         final TelemetryScheduler scheduler = mock(TelemetryScheduler.class);
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(builder);
 
-        TelemetryHolder.set(telemetry);
-
         final TelemetryEvent event = TelemetryEvent.create("action", "type_url", "search_bar");
-        event.queue();
+        Telemetry.record(event);
 
         TestUtils.waitForExecutor(telemetry);
 
         verify(measurement).add(event);
 
-        TelemetryHolder.set(null);
+        Telemetry.shutdown();
     }
 
     @Test
@@ -84,18 +81,16 @@ public class TelemetryEventTest {
         final TelemetryClient client = mock(TelemetryClient.class);
         final TelemetryScheduler scheduler = mock(TelemetryScheduler.class);
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(builder);
 
-        TelemetryHolder.set(telemetry);
-
         final TelemetryEvent event = TelemetryEvent.create("action", "type_url", "search_bar");
-        event.queue();
+        Telemetry.record(event);
 
         TestUtils.waitForExecutor(telemetry);
 
         verify(measurement).add(event);
 
-        TelemetryHolder.set(null);
+        Telemetry.shutdown();
     }
 }

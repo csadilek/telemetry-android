@@ -86,9 +86,8 @@ public class TelemetryTest {
         final TelemetryCorePingBuilder pingBuilder = spy(new TelemetryCorePingBuilder(configuration));
         doReturn("ffffffff-0000-0000-ffff-ffffffffffff").when(pingBuilder).generateDocumentId();
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(pingBuilder);
-        TelemetryHolder.set(telemetry);
 
         telemetry.recordSessionStart();
         Thread.sleep(2100);
@@ -162,13 +161,12 @@ public class TelemetryTest {
         final TelemetryMobileEventPingBuilder pingBuilder = spy(new TelemetryMobileEventPingBuilder(configuration));
         doReturn("ffffffff-0000-0000-ffff-ffffffffffff").when(pingBuilder).generateDocumentId();
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(pingBuilder);
-        TelemetryHolder.set(telemetry);
 
-        TelemetryEvent.create("action", "type_url", "search_bar").queue();
-        TelemetryEvent.create("action", "type_query", "search_bar").queue();
-        TelemetryEvent.create("action", "click", "erase_button").queue();
+        Telemetry.record(TelemetryEvent.create("action", "type_url", "search_bar"));
+        Telemetry.record(TelemetryEvent.create("action", "type_query", "search_bar"));
+        Telemetry.record(TelemetryEvent.create("action", "click", "erase_button"));
 
         telemetry.queuePing(TelemetryMobileEventPingBuilder.TYPE);
 
@@ -257,13 +255,12 @@ public class TelemetryTest {
         final TelemetryEventPingBuilder pingBuilder = spy(new TelemetryEventPingBuilder(configuration));
         doReturn("ffffffff-0000-0000-ffff-ffffffffffff").when(pingBuilder).generateDocumentId();
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(pingBuilder);
-        TelemetryHolder.set(telemetry);
 
-        TelemetryEvent.create("action", "type_url", "search_bar").queue();
-        TelemetryEvent.create("action", "type_query", "search_bar").queue();
-        TelemetryEvent.create("action", "click", "erase_button").queue();
+        Telemetry.record(TelemetryEvent.create("action", "type_url", "search_bar"));
+        Telemetry.record(TelemetryEvent.create("action", "type_query", "search_bar"));
+        Telemetry.record(TelemetryEvent.create("action", "click", "erase_button"));
 
         telemetry.queuePing(TelemetryEventPingBuilder.TYPE);
 
@@ -336,9 +333,8 @@ public class TelemetryTest {
         final TelemetryClient client = spy(new HttpURLConnectionTelemetryClient());
         final TelemetryScheduler scheduler = new JobSchedulerTelemetryScheduler();
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(new TelemetryCorePingBuilder(configuration));
-        TelemetryHolder.set(telemetry);
 
         telemetry.setDefaultSearchProvider(new DefaultSearchMeasurement.DefaultSearchEngineProvider() {
             @Override
@@ -397,13 +393,12 @@ public class TelemetryTest {
         final TelemetryScheduler scheduler = mock(TelemetryScheduler.class);
 
         final TelemetryMobileEventPingBuilder pingBuilder = new TelemetryMobileEventPingBuilder(configuration);
-        final Telemetry telemetry = spy(new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = spy(Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(pingBuilder));
 
-        TelemetryHolder.set(telemetry);
 
         for (int i = 0; i < 499; i++) {
-            TelemetryEvent.create("category", "method", "object", String.valueOf(i)).queue();
+            Telemetry.record(TelemetryEvent.create("category", "method", "object", String.valueOf(i)));
         }
 
         TestUtils.waitForExecutor(telemetry);
@@ -412,7 +407,7 @@ public class TelemetryTest {
         verify(telemetry, never()).queuePing(TelemetryMobileEventPingBuilder.TYPE);
 
         // Queue event number 500
-        TelemetryEvent.create("category", "method", "object", "500").queue();
+        Telemetry.record(TelemetryEvent.create("category", "method", "object", "500"));
 
         TestUtils.waitForExecutor(telemetry);
 
@@ -432,13 +427,12 @@ public class TelemetryTest {
         final TelemetryScheduler scheduler = mock(TelemetryScheduler.class);
 
         final TelemetryEventPingBuilder pingBuilder = new TelemetryEventPingBuilder(configuration);
-        final Telemetry telemetry = spy(new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = spy(Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(pingBuilder));
 
-        TelemetryHolder.set(telemetry);
 
         for (int i = 0; i < 499; i++) {
-            TelemetryEvent.create("category", "method", "object", String.valueOf(i)).queue();
+            Telemetry.record(TelemetryEvent.create("category", "method", "object", String.valueOf(i)));
         }
 
         TestUtils.waitForExecutor(telemetry);
@@ -447,7 +441,7 @@ public class TelemetryTest {
         verify(telemetry, never()).queuePing(TelemetryEventPingBuilder.TYPE);
 
         // Queue event number 500
-        TelemetryEvent.create("category", "method", "object", "500").queue();
+        Telemetry.record(TelemetryEvent.create("category", "method", "object", "500"));
 
         TestUtils.waitForExecutor(telemetry);
 
@@ -485,6 +479,6 @@ public class TelemetryTest {
 
     @After
     public void tearDown() {
-        TelemetryHolder.set(null);
+        Telemetry.shutdown();
     }
 }

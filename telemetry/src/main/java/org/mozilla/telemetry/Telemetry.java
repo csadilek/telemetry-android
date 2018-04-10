@@ -10,6 +10,7 @@ import android.support.annotation.VisibleForTesting;
 
 import org.mozilla.telemetry.config.TelemetryConfiguration;
 import org.mozilla.telemetry.event.TelemetryEvent;
+import org.mozilla.telemetry.event.TelemetryEventHandler;
 import org.mozilla.telemetry.measurement.DefaultSearchMeasurement;
 import org.mozilla.telemetry.measurement.EventsMeasurement;
 import org.mozilla.telemetry.net.TelemetryClient;
@@ -28,22 +29,88 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Telemetry {
-    private final TelemetryConfiguration configuration;
-    private final TelemetryStorage storage;
-    private final TelemetryClient client;
-    private final TelemetryScheduler scheduler;
+    private TelemetryConfiguration configuration;
+    private TelemetryStorage storage;
+    private TelemetryClient client;
+    private TelemetryScheduler scheduler;
+    private TelemetryEventHandler eventHandler;
+    private TelemetryEventHandler defaultEventHandler = createDefaultEventHandler();
 
-    private final Map<String, TelemetryPingBuilder> pingBuilders;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Map<String, TelemetryPingBuilder> pingBuilders;
+    private ExecutorService executor;
 
-    public Telemetry(TelemetryConfiguration configuration, TelemetryStorage storage,
-                     TelemetryClient client, TelemetryScheduler scheduler) {
-        this.configuration = configuration;
-        this.storage = storage;
-        this.client = client;
-        this.scheduler = scheduler;
+    private Telemetry() {}
 
-        pingBuilders = new HashMap<>();
+    private static Telemetry INSTANCE = new Telemetry();
+
+    public static Telemetry initialize(TelemetryConfiguration configuration, TelemetryStorage storage,
+                         TelemetryClient client, TelemetryScheduler scheduler) {
+
+        // TODO add non-null assertion for all parameters
+
+        if (INSTANCE.configuration != null) {
+            throw new RuntimeException("Telemetry subsystem can only be initialized once!");
+        }
+
+        INSTANCE.configuration = configuration;
+        INSTANCE.storage = storage;
+        INSTANCE.client = client;
+        INSTANCE.scheduler = scheduler;
+        INSTANCE.pingBuilders = new HashMap<>();
+        INSTANCE.executor = Executors.newSingleThreadExecutor();
+
+        return INSTANCE;
+    }
+
+    public static Telemetry initialize(TelemetryConfiguration configuration, TelemetryStorage storage,
+                                       TelemetryClient client, TelemetryScheduler scheduler,
+                                       TelemetryEventHandler handler) {
+
+        initialize(configuration, storage, client, scheduler);
+        INSTANCE.eventHandler = handler;
+        return INSTANCE;
+    }
+
+    public static Telemetry get() {
+        if (INSTANCE.configuration == null) {
+            throw new RuntimeException("Telemetry subsystem not initialized!");
+        }
+        return INSTANCE;
+    }
+
+    public static void record(TelemetryEvent event) {
+        if (INSTANCE.configuration != null) {
+            INSTANCE.defaultEventHandler.handleEvent(event);
+        }
+    }
+
+    public static void shutdown() {
+        INSTANCE.executor.shutdown();
+        INSTANCE.configuration = null;
+        INSTANCE.storage = null;
+        INSTANCE.client = null;
+        INSTANCE.scheduler = null;
+        INSTANCE.eventHandler = null;
+        INSTANCE.pingBuilders = null;
+    }
+
+    private static TelemetryEventHandler createDefaultEventHandler() {
+        return new TelemetryEventHandler() {
+            @Override
+            public boolean handleEvent(TelemetryEvent e) {
+
+                if (INSTANCE.eventHandler != null) {
+                    if(INSTANCE.eventHandler.handleEvent(e)) {
+                        INSTANCE.queueEvent(e);
+                    }
+                }
+                else {
+                    INSTANCE.queueEvent(e);
+                }
+                
+                return false;
+            }
+        };
     }
 
     public Telemetry addPingBuilder(TelemetryPingBuilder builder) {
@@ -76,9 +143,9 @@ public class Telemetry {
         return this;
     }
 
-    public Telemetry queueEvent(final TelemetryEvent event) {
+    private void queueEvent(final TelemetryEvent event) {
         if (!configuration.isCollectionEnabled()) {
-            return this;
+            return;
         }
 
         executor.submit(new Runnable() {
@@ -109,7 +176,7 @@ public class Telemetry {
             }
         });
 
-        return this;
+        return;
     }
 
     public Collection<TelemetryPingBuilder> getBuilders() {

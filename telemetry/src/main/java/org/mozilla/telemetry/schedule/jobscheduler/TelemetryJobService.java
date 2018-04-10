@@ -12,7 +12,6 @@ import android.support.annotation.VisibleForTesting;
 import android.util.Log;
 
 import org.mozilla.telemetry.Telemetry;
-import org.mozilla.telemetry.TelemetryHolder;
 import org.mozilla.telemetry.config.TelemetryConfiguration;
 import org.mozilla.telemetry.net.TelemetryClient;
 import org.mozilla.telemetry.ping.TelemetryPingBuilder;
@@ -53,7 +52,7 @@ public class TelemetryJobService extends JobService {
     }
 
     @VisibleForTesting public void uploadPingsInBackground(AsyncTask task, JobParameters parameters) {
-        final Telemetry telemetry = TelemetryHolder.get();
+        final Telemetry telemetry = Telemetry.get();
         final TelemetryConfiguration configuration = telemetry.getConfiguration();
         final TelemetryStorage storage = telemetry.getStorage();
 

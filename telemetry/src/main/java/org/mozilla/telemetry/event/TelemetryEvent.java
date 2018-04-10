@@ -12,8 +12,6 @@ import android.support.annotation.RestrictTo;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.mozilla.telemetry.TelemetryHolder;
-import org.mozilla.telemetry.ping.TelemetryEventPingBuilder;
 import org.mozilla.telemetry.util.StringUtils;
 
 import java.util.HashMap;
@@ -112,13 +110,6 @@ public class TelemetryEvent {
                 StringUtils.safeSubstring(value, 0, MAX_LENGTH_EXTRA_VALUE));
 
         return this;
-    }
-
-    /**
-     * Queue this event to be sent with the next event ping.
-     */
-    public void queue() {
-        TelemetryHolder.get().queueEvent(this);
     }
 
     /**

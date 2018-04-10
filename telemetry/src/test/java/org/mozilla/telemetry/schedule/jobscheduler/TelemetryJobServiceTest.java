@@ -7,11 +7,9 @@ package org.mozilla.telemetry.schedule.jobscheduler;
 import android.app.job.JobParameters;
 import android.os.AsyncTask;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mozilla.telemetry.Telemetry;
-import org.mozilla.telemetry.TelemetryHolder;
 import org.mozilla.telemetry.TestUtils;
 import org.mozilla.telemetry.config.TelemetryConfiguration;
 import org.mozilla.telemetry.net.TelemetryClient;
@@ -52,9 +50,8 @@ public class TelemetryJobServiceTest {
 
         final TelemetryScheduler scheduler = mock(TelemetryScheduler.class);
 
-        final Telemetry telemetry = new Telemetry(configuration, storage, client, scheduler)
+        final Telemetry telemetry = Telemetry.initialize(configuration, storage, client, scheduler)
                 .addPingBuilder(new TelemetryCorePingBuilder(configuration));
-        TelemetryHolder.set(telemetry);
 
         telemetry.queuePing(TelemetryCorePingBuilder.TYPE)
             .queuePing(TelemetryCorePingBuilder.TYPE)
